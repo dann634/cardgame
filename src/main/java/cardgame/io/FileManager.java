@@ -1,4 +1,4 @@
-package main.java.cardgame.io;
+package cardgame.io;
 
 import java.io.*;
 import java.util.ArrayList;
@@ -11,7 +11,7 @@ public class FileManager {
         ArrayList<String> fileContents = new ArrayList<>();
         try {
             String line;
-            BufferedReader reader = new BufferedReader(new FileReader("./resources/packs/" + path));
+            BufferedReader reader = new BufferedReader(new FileReader(path));
             while((line = reader.readLine()) != null) {
                 fileContents.add(line);
             }

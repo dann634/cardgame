@@ -1,4 +1,4 @@
-package main.java.cardgame;
+package cardgame;
 
 import java.util.concurrent.ConcurrentLinkedQueue;
 

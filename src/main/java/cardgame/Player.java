@@ -1,8 +1,7 @@
-package main.java.cardgame;
+package cardgame;
 
-
-import main.java.cardgame.exceptions.PlayerHasNoCardsException;
-import main.java.cardgame.exceptions.PlayerHasTooManyCardsException;
+import cardgame.exceptions.PlayerHasNoCardsException;
+import cardgame.exceptions.PlayerHasTooManyCardsException;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -23,20 +22,18 @@ public class Player {
             throw new PlayerHasNoCardsException();
         } else {
             List<Card> nonPreferredList = new ArrayList(this.cards.stream()
-                    .filter((x) -> x.getNumber() != this.number)
+                    .filter((x) -> x.getNumber() != this.number + 1)
                     .toList());
             Random rand = new Random();
             int indexToRemove = rand.nextInt(nonPreferredList.size());
-            return nonPreferredList.remove(indexToRemove);
+            Card cardToRemove = nonPreferredList.get(indexToRemove);
+            this.cards.remove(cardToRemove);
+            return cardToRemove;
         }
     }
 
     public synchronized void pickupCard(Card newCard) {
-        if (this.cards.size() == MAX_CARD_LIMIT) {
-            throw new PlayerHasTooManyCardsException();
-        } else {
-            this.cards.add(newCard);
-        }
+        this.cards.add(newCard);
     }
 
     public boolean hasWon() {
@@ -66,4 +63,9 @@ public class Player {
 
         return handStr.toString();
     }
+
+    public int getNumberOfCards() {
+        return this.cards.size();
+    }
+
 }

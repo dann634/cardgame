@@ -1,4 +1,4 @@
-package main.java.cardgame.exceptions;
+package cardgame.exceptions;
 
 public class InvalidCardException extends RuntimeException{
 

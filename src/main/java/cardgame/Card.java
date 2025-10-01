@@ -1,6 +1,7 @@
-package main.java.cardgame;
+package cardgame;
 
-import main.java.cardgame.exceptions.InvalidCardException;
+
+import cardgame.exceptions.InvalidCardException;
 
 public class Card {
     private final Integer number;
