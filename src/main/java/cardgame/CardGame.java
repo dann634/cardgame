@@ -100,7 +100,7 @@ public class CardGame {
 
     private void addPlayer(int playerNumber, int totalPlayers) throws InterruptedException {
         Thread thread = new Thread(() -> {
-            List<String> outputFileArray = new ArrayList();
+            List<String> outputFileArray = new ArrayList<>();
             Player player = new Player(playerNumber);
 
             while(!this.isReady) {
@@ -116,6 +116,7 @@ public class CardGame {
                 if (newCard != null) {
                     player.pickupCard(newCard);
                     outputFileArray.add("player %d draws a %d from deck %d%n".formatted(player.getOutputNumber(), newCard.getNumber(), player.getOutputNumber()));
+                    continue; //Wait until you can pick up a card
                 }
 
                 //Handle Discard
