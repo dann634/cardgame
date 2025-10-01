@@ -1,5 +1,7 @@
 package main.java.cardgame;
 
+import main.java.cardgame.io.FileManager;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
@@ -7,6 +9,7 @@ import java.util.Scanner;
 public class CardGame {
     private final Scanner scan;
     private volatile CardDeck[] cardDecks;
+    private List<Card> pack;
     private volatile boolean isRunning = false;
     private volatile boolean isReady = false;
     private final List<Thread> userThreads;
@@ -18,19 +21,22 @@ public class CardGame {
 
     public CardGame() {
         this.scan = new Scanner(System.in);
-        this.userThreads = new ArrayList();
+        this.userThreads = new ArrayList<>();
+        this.pack = new ArrayList<>();
     }
 
     public void startGame() {
         int playerCount = this.getPlayerCount();
         this.cardDecks = new CardDeck[playerCount];
 
-        int i;
-        for(i = 0; i < playerCount; ++i) {
+        loadPackFromFile();
+
+
+        for(int i = 0; i < playerCount; ++i) {
             this.cardDecks[i] = new CardDeck();
         }
 
-        for(i = 0; i < playerCount; i++) {
+        for(int i = 0; i < playerCount; i++) {
             try {
                 this.addPlayer(i, playerCount);
             } catch (InterruptedException e) {
@@ -40,6 +46,41 @@ public class CardGame {
 
         this.isReady = true;
         this.isRunning = true;
+    }
+
+    private void loadPackFromFile() {
+        System.out.println("Please enter location of pack to load:");
+        boolean isValid = false;
+        while(!isValid) {
+            String path = this.scan.nextLine();
+
+            if(!FileManager.doesFileExist(path)) {
+                System.out.println("Error: Pack File not Found");
+                continue;
+            }
+
+            List<String> fileData = FileManager.readFile(path);
+
+            if(fileData.size() % 8 != 0) {
+                System.out.println("Error: Invalid Pack");
+                continue;
+            }
+
+            try {
+                for(String line : fileData) {
+                    int number = Integer.parseInt(line);
+                    if(number <= 0) {
+                        throw new NumberFormatException();
+                    }
+
+                    Card card = new Card(number);
+                    this.pack.add(card);
+                }
+                isValid = true;
+            } catch (NumberFormatException e) {
+                System.out.println("Error: Pack contains invalid values");
+            }
+        }
     }
 
     private int getPlayerCount() {
@@ -93,6 +134,7 @@ public class CardGame {
 
             outputFileArray.add("player " + player.getOutputNumber() + " exits");
             outputFileArray.add("player %d hand: %s".formatted(player.getOutputNumber(), player.getHandFormatted()));
+            System.out.println(outputFileArray);
         });
         this.userThreads.add(thread);
         thread.start();
