@@ -1,3 +1,6 @@
+package java.main;
+
+import main.java.cardgame.Card;
 import org.junit.Test;
 import static org.junit.Assert.*;
 

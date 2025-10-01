@@ -1,3 +1,5 @@
+package main.java.cardgame;
+
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class CardDeck {
