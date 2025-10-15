@@ -2,19 +2,25 @@ package cardgame;
 
 import cardgame.io.FileManager;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Scanner;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.*;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class CardGame {
     private final Scanner scan;
     private volatile CardDeck[] cardDecks;
-    private List<Card> pack;
-    private volatile AtomicBoolean isRunning;
+    private final List<Card> pack;
+    private volatile AtomicBoolean isRunning = new AtomicBoolean(true);
     private volatile boolean isReady = false;
-    private final List<Thread> userThreads;
     private final List<Player> players;
+    private CountDownLatch countDownLatch;
+    private ExecutorService executor;
 
     public static void main(String[] args) {
         CardGame cardGame = new CardGame();
@@ -23,15 +29,18 @@ public class CardGame {
 
     public CardGame() {
         this.scan = new Scanner(System.in);
-        this.userThreads = new ArrayList<>();
         this.pack = new ArrayList<>();
         this.players = new ArrayList<>();
-        this.isRunning = new AtomicBoolean(false);
     }
 
     public void startGame() {
         int playerCount = this.getPlayerCount();
+        createPack(playerCount);
         this.cardDecks = new CardDeck[playerCount];
+        this.executor = Executors.newFixedThreadPool(playerCount);
+        this.countDownLatch = new CountDownLatch(1);
+
+
 
         loadPackFromFile();
 
@@ -40,12 +49,11 @@ public class CardGame {
         }
 
         for (int i = 0; i < playerCount; i++) {
-            try {
-                this.players.add(addPlayer(i, playerCount));
-            } catch (InterruptedException e) {
-                System.out.println("Error: Couldn't start player thread");
-            }
+            Player player = new Player(i);
+            this.players.add(player);
         }
+
+
 
         //Give players cards
         boolean givenCards = false;
@@ -61,18 +69,25 @@ public class CardGame {
         //Give Cards to Deck
         while (!this.pack.isEmpty()) {
             for (CardDeck deck : this.cardDecks) {
+
                 if (!this.pack.isEmpty()) {
+
                     deck.addCard(this.pack.remove(0));
+
                 }
+
             }
+
+        }
+        for (int i = 0; i < playerCount; i++) {
+            executor.submit(runPlayer(this.players.get(i), playerCount));
         }
 
-        for (Thread thread : this.userThreads) {
-            thread.start();
-        }
 
         this.isReady = true;
-        this.isRunning.set(true);
+        countDownLatch.countDown();
+
+        shutdownThreads();
 
 
     }
@@ -131,52 +146,120 @@ public class CardGame {
         return players;
     }
 
-    private Player addPlayer(int playerNumber, int totalPlayers) throws InterruptedException {
-        Player player = new Player(playerNumber);
-        Thread thread = new Thread(() -> {
+    private Runnable runPlayer(Player player, int totalPlayers) {
+        return () -> {
+            int playerNumber = player.getNumber();
             List<String> outputFileArray = new ArrayList<>();
-            while(!this.isReady) {
-            }
+
 
             outputFileArray.add("player %d initial hand %s".formatted(player.getOutputNumber(), player.getHandFormatted()));
 
-            while(this.isRunning.get()) {
+            try {
+                countDownLatch.await();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return;
+            }
 
+            while(CardGame.this.isRunning.get()) {
+
+
+
+                try {
+                    //Handle pickup
+                    Card newCard = this.cardDecks[playerNumber].getCard(100, TimeUnit.MILLISECONDS);
+
+                    if (newCard != null) {
+                        player.pickupCard(newCard);
+                        outputFileArray.add("player %d draws a %d from deck %d".formatted(player.getOutputNumber(), newCard.getNumber(), playerNumber + 1));
+
+                        //Handle Discard
+                        int discardDeckIndex = playerNumber == totalPlayers - 1 ? 0 : playerNumber + 1;
+                        Card oldCard = player.discardCard();
+                        this.cardDecks[discardDeckIndex].addCard(oldCard);
+                        outputFileArray.add("player %d discards a %d to deck %d".formatted(player.getOutputNumber(), oldCard.getNumber(), discardDeckIndex + 1));
+                        outputFileArray.add("player %d current hand is %s".formatted(player.getOutputNumber(), player.getHandFormatted()));
+
+                    } else {
+                        if(!CardGame.this.isRunning.get()) {
+                            break;
+                        }
+                    }
+                } catch (InterruptedException e) {
+                    System.out.println("Thread interrupt");
+                    Thread.currentThread().interrupt();
+                }
 
                 //Handle Player Won
                 if (player.hasWon()) {
                     outputFileArray.add("player " + player.getOutputNumber() + " won");
-                    synchronized (this) {
-                        this.isRunning.set(false);
-                        outputFileArray.add("Left because someone won");
-                    }
+                    CardGame.this.isRunning.set(false);
+                    outputFileArray.add("Left because someone won");
                     break;
                 }
 
-                //Handle pickup
-                Card newCard = this.cardDecks[playerNumber].getCard();
-                if (newCard != null) {
-                    player.pickupCard(newCard);
-                    outputFileArray.add("player %d draws a %d from deck %d".formatted(player.getOutputNumber(), newCard.getNumber(), playerNumber + 1));
-                } else {
-                    continue; //Wait until you can pick up a card
-                }
 
-                //Handle Discard
-                int discardDeckIndex = playerNumber == totalPlayers - 1 ? 0 : playerNumber + 1;
-                Card oldCard = player.discardCard();
-                this.cardDecks[discardDeckIndex].addCard(oldCard);
-                outputFileArray.add("player %d discards a %d to deck %d".formatted(player.getOutputNumber(), oldCard.getNumber(), discardDeckIndex + 1));
-                outputFileArray.add("player %d current hand is %s".formatted(player.getOutputNumber(), player.getHandFormatted()));
+
+//                try {
+//                    Thread.sleep(10);
+//                } catch (InterruptedException e) {
+//                    throw new RuntimeException(e);
+//                }
 
 
             }
 
             outputFileArray.add("player " + player.getOutputNumber() + " exits");
             outputFileArray.add("player %d hand: %s".formatted(player.getOutputNumber(), player.getHandFormatted()));
-            System.out.println(outputFileArray);
-        });
-        this.userThreads.add(thread);
-        return player;
+            System.out.println(outputFileArray.size());
+        };
     }
+
+    private void shutdownThreads() {
+
+        this.executor.shutdown();
+        try{
+            if(!executor.awaitTermination(5, TimeUnit.SECONDS)) {
+                executor.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            executor.shutdownNow();
+        }
+
+    }
+
+    public void createPack(int numPlayers) {
+        int totalCards = numPlayers * 8;
+
+        List<Integer> pack = new ArrayList<Integer>();
+
+        for (int num = 1; num < numPlayers + 1; num++) {
+            for (int i = 0; i < 4; i++) {
+                pack.add(num);
+            }
+        }
+
+        Random rand = new Random();
+        int remaining = totalCards - pack.size();
+        for (int i = 0; i < remaining; i++) {
+            int randomNum = rand.nextInt(numPlayers) + (numPlayers + 1);
+            pack.add(randomNum);
+        }
+
+        Collections.shuffle(pack);
+
+        String folderPath = "src/main/resources/packs/";
+        File folder = new File(folderPath);
+        String fileName = "pack" + numPlayers + ".txt";
+
+        try (FileWriter writer = new FileWriter(folderPath + fileName)) {
+            for (int num : pack) {
+                writer.write(num + "\n");
+            }
+            System.out.println("Pack created successfully!");
+        } catch (IOException e) {
+            System.err.println("Error writing the pack file: " + e.getMessage());
+        }
+    }
+
 }

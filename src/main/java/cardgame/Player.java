@@ -1,7 +1,6 @@
 package cardgame;
 
 import cardgame.exceptions.PlayerHasNoCardsException;
-import cardgame.exceptions.PlayerHasTooManyCardsException;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -14,14 +13,15 @@ public class Player {
 
     public Player(int number) {
         this.number = number;
-        this.cards = new ArrayList();
+        this.cards = new ArrayList<>();
     }
 
-    public synchronized Card discardCard() {
+    public Card discardCard() {
+
         if (this.cards.isEmpty()) {
             throw new PlayerHasNoCardsException();
         } else {
-            List<Card> nonPreferredList = new ArrayList(this.cards.stream()
+            List<Card> nonPreferredList = new ArrayList<>(this.cards.stream()
                     .filter((x) -> x.getNumber() != this.number + 1)
                     .toList());
             Random rand = new Random();
@@ -32,7 +32,7 @@ public class Player {
         }
     }
 
-    public synchronized void pickupCard(Card newCard) {
+    public void pickupCard(Card newCard) {
         this.cards.add(newCard);
     }
 
@@ -68,4 +68,7 @@ public class Player {
         return this.cards.size();
     }
 
+    public int getNumber() {
+        return number;
+    }
 }

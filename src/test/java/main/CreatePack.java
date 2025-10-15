@@ -10,7 +10,7 @@ import java.util.Random;
 
 public class CreatePack {
     public static void main(String[] args) {
-        int numPlayers = 10;
+        int numPlayers = 100;
         createPack(numPlayers);
     }
 
