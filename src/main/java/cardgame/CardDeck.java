@@ -1,20 +1,17 @@
 package cardgame;
 
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
 
 public class CardDeck {
 
-    private final BlockingQueue<Card> safeQueue;
+    private final ConcurrentLinkedQueue<Card> safeQueue;
 
     public CardDeck() {
-        this.safeQueue = new LinkedBlockingQueue<>();
+        this.safeQueue = new ConcurrentLinkedQueue<>();
     }
 
-    public Card getCard(long time, TimeUnit timeUnit) throws InterruptedException {
-        return this.safeQueue.poll(time, timeUnit);
+    public Card getCard() throws InterruptedException {
+        return this.safeQueue.poll();
     }
 
     public void addCard(Card card) {
