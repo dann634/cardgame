@@ -6,7 +6,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.CountDownLatch;
 
 public class Player extends Thread {
     private final int number;
@@ -14,12 +14,13 @@ public class Player extends Thread {
     private final List<String> actions;
     private final CardDeck pickupDeck;
     private final CardDeck discardDeck;
-    private int pickupIndex;
-    private int discardIndex;
+    private final int pickupIndex;
+    private final int discardIndex;
+    private final CountDownLatch countDownLatch;
 
 
 
-    public Player(int number, CardDeck pickupDeck, CardDeck discardDeck, int discardIndex) {
+    public Player(int number, CardDeck pickupDeck, CardDeck discardDeck, int discardIndex, CountDownLatch countDownLatch) {
         this.number = number;
         this.cards = Collections.synchronizedList(new ArrayList<>());
         this.actions = Collections.synchronizedList(new ArrayList<>());
@@ -27,45 +28,61 @@ public class Player extends Thread {
         this.discardDeck = discardDeck;
         this.pickupIndex = number;
         this.discardIndex = discardIndex;
+        this.countDownLatch = countDownLatch;
     }
 
     @Override
     public void run() {
 
-        while(!this.isInterrupted() && CardGame.isRunning.get()) {
-            try {
+        this.countDownLatch.countDown();
 
-                //Handle Player Won
-                if (this.hasWon()) {
-                    this.actions.add("player " + (this.number + 1) + " wins");
-                    CardGame.isRunning.set(false);
-                    break;
-                }
+        try {
+            this.countDownLatch.await();
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+
+        //Handle Player Won on Initial Deal
+        if (this.hasWon()) {
+            this.actions.add("player " + (this.number + 1) + " wins");
+            CardGame.isRunning.set(false);
+            return;
+        }
+
+
+        while(CardGame.isRunning.get()) {
+            try {
 
 
                 //Handle pickup
-                Card newCard;
-                synchronized (this.pickupDeck) {
-                    newCard = this.pickupDeck.getCard();
+                Card newCard = this.pickupDeck.getCard();
+
+                if(newCard == null) {
+                    Thread.yield();
+                    continue;
                 }
 
-                if (newCard != null) {
-                    this.pickupCard(newCard);
-                    this.actions.add("player %d draws a %d from deck %d".formatted(this.number + 1, newCard.getNumber(), this.number + 1));
+                this.pickupCard(newCard);
+                this.actions.add("player %d draws a %d from deck %d".formatted(this.number + 1, newCard.getNumber(), this.pickupIndex));
 
-                    //Handle Discard
-                    Card oldCard = this.discardCard();
-                    synchronized (this.discardDeck) {
-                        this.discardDeck.addCard(oldCard);
-                    }
-                    this.actions.add("player %d discards a %d to deck %d".formatted(this.number + 1, oldCard.getNumber(), this.discardIndex));
-                    this.actions.add("player %d current hand is %s".formatted(this.number + 1, this.getHandFormatted()));
+                //Handle Discard
+                Card oldCard = this.discardCard();
+                this.discardDeck.addCard(oldCard);
+                this.actions.add("player %d discards a %d to deck %d".formatted(this.number + 1, oldCard.getNumber(), this.discardIndex));
+                this.actions.add("player %d current hand is %s".formatted(this.number + 1, this.getHandFormatted()));
 
+                //Handle Player Won
+                if (this.hasWon()) {
+                    CardGame.winningLatch.countDown();
+                    CardGame.isRunning.set(false);
+                    CardGame.winningPlayer.compareAndSet(-1, this.number + 1);
+                    this.actions.add("player " + (this.number + 1) + " wins");
+                    this.actions.add("player " + (this.number + 1) + " exits");
+                    this.actions.add("player %d hand: %s".formatted(this.number + 1, this.getHandFormatted()));
+                    return;
                 }
 
 
-
-//                Thread.sleep(5);
 
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
@@ -73,6 +90,14 @@ public class Player extends Thread {
             }
         }
 
+        try {
+            CardGame.winningLatch.await();
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+
+        int winningPlayer = CardGame.winningPlayer.get();
+        this.actions.add("player " + winningPlayer + " has informed player " + getOutputNumber() + " that player " + winningPlayer + " has won");
         this.actions.add("player " + (this.number + 1) + " exits");
         this.actions.add("player %d hand: %s".formatted(this.number + 1, this.getHandFormatted()));
 
@@ -80,15 +105,6 @@ public class Player extends Thread {
 
     }
 
-    @Override
-    public void interrupt() {
-        super.interrupt();
-    }
-
-    public void interruptGame(int playerNumberFinished) {
-        this.actions.add("player " + playerNumberFinished + " has informed player " + getOutputNumber() + " that player " + playerNumberFinished + " has won");
-        this.interrupt();
-    }
 
     public Card discardCard() {
 
@@ -98,6 +114,11 @@ public class Player extends Thread {
             List<Card> nonPreferredList = new ArrayList<>(this.cards.stream()
                     .filter((x) -> x.getNumber() != this.number + 1)
                     .toList());
+
+            if(nonPreferredList.isEmpty()) {
+                return this.cards.remove(0);
+            }
+
             Random rand = new Random();
             int indexToRemove = rand.nextInt(nonPreferredList.size());
             Card cardToRemove = nonPreferredList.get(indexToRemove);

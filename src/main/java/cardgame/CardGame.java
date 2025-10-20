@@ -7,19 +7,20 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class CardGame {
     private final Scanner scan;
     private volatile CardDeck[] cardDecks;
     private final List<Card> pack;
-    public static final AtomicBoolean isRunning = new AtomicBoolean(true);
+    public static volatile AtomicBoolean isRunning = new AtomicBoolean(true);
+    public static final AtomicInteger winningPlayer = new AtomicInteger(-1);
     private final List<Player> players;
     private CountDownLatch countDownLatch;
-    private ExecutorService executor;
+
+    public static final CountDownLatch winningLatch = new CountDownLatch(1);
+
 
     public static void main(String[] args) {
         CardGame cardGame = new CardGame();
@@ -36,10 +37,7 @@ public class CardGame {
         int playerCount = this.getPlayerCount();
         createPack(playerCount);
         this.cardDecks = new CardDeck[playerCount];
-        this.executor = Executors.newFixedThreadPool(playerCount);
-        this.countDownLatch = new CountDownLatch(1);
-
-
+        this.countDownLatch = new CountDownLatch(playerCount);
 
         loadPackFromFile();
 
@@ -53,7 +51,7 @@ public class CardGame {
             CardDeck pickupDeck = this.cardDecks[i];
             CardDeck discardDeck = this.cardDecks[discardDeckIndex];
 
-            Player player = new Player(i, pickupDeck, discardDeck, discardDeckIndex);
+            Player player = new Player(i, pickupDeck, discardDeck, discardDeckIndex, this.countDownLatch);
             this.players.add(player);
         }
 
@@ -73,48 +71,52 @@ public class CardGame {
         //Give Cards to Deck
         while (!this.pack.isEmpty()) {
             for (CardDeck deck : this.cardDecks) {
-
                 if (!this.pack.isEmpty()) {
-
                     deck.addCard(this.pack.remove(0));
-
                 }
-
             }
-
         }
+
+
         for (int i = 0; i < playerCount; i++) {
             this.players.get(i).start();
         }
 
-        boolean isFinished = false;
-        int playerNumberFinished = -1;
-        while(!isFinished) {
-            for(Player player : this.players) {
-                if(player.isAlive()) continue;
-                isFinished = true;
-                playerNumberFinished = player.getNumber() + 1;
-                break;
+
+        // Wait for a player to win
+        try {
+            for (Player player : this.players) {
+                player.join();
             }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
         }
+
 
         isRunning.set(false);
         for(Player player : this.players) {
             if(player.isAlive()) {
-                player.interruptGame(playerNumberFinished);
+                player.interrupt();
             }
         }
 
         try {
-            Thread.sleep(20);
+            Thread.sleep(100);
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
 
 
+        int counter = 0;
         for(Player player : this.players) {
-            System.out.println(player.getActions());
+            String str = player.getActions().get(player.getActions().size() - 3);
+            System.out.println(str);
+//            System.out.println(player.getActions().size());
         }
+
+//        for(CardDeck cardDeck : this.cardDecks) {
+//            System.out.println(cardDeck.size());
+//        }
 
 
     }
@@ -124,7 +126,6 @@ public class CardGame {
         boolean isValid = false;
         while(!isValid) {
             System.out.println("Please enter location of pack to load:");
-            this.scan.nextLine();
             String fileName = this.scan.nextLine();
             String path = "src/main/resources/packs/" + fileName;
 
@@ -165,6 +166,7 @@ public class CardGame {
             try {
                 System.out.println("Please enter the number of players");
                 players = this.scan.nextInt();
+                this.scan.nextLine();
             } catch (RuntimeException e) {
                 System.out.println("Error: Please enter a non-negative integer");
             }

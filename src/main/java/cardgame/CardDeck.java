@@ -21,4 +21,6 @@ public class CardDeck {
     public boolean isEmpty() {
         return this.safeQueue.isEmpty();
     }
+
+    public int size() {return this.safeQueue.size();}
 }
