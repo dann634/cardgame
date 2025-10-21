@@ -17,7 +17,6 @@ public class CardGame {
     public static volatile AtomicBoolean isRunning = new AtomicBoolean(true);
     public static final AtomicInteger winningPlayer = new AtomicInteger(-1);
     private final List<Player> players;
-    private CountDownLatch countDownLatch;
 
     public static final CountDownLatch winningLatch = new CountDownLatch(1);
 
@@ -34,30 +33,31 @@ public class CardGame {
     }
 
     public void startGame() {
+        //Get Player Count from User and initialise dependent variables
         int playerCount = this.getPlayerCount();
         createPack(playerCount);
         this.cardDecks = new CardDeck[playerCount];
-        this.countDownLatch = new CountDownLatch(playerCount);
+        CountDownLatch countDownLatch = new CountDownLatch(playerCount);
 
         loadPackFromFile();
 
+        //Assign thread-safe deck's to array
         for (int i = 0; i < playerCount; ++i) {
             this.cardDecks[i] = new CardDeck();
         }
 
+        //Give each player their decks to pickup from and discard to and create player objects
         for (int i = 0; i < playerCount; i++) {
-
             int discardDeckIndex = i == playerCount - 1 ? 0 : i + 1;
             CardDeck pickupDeck = this.cardDecks[i];
             CardDeck discardDeck = this.cardDecks[discardDeckIndex];
 
-            Player player = new Player(i, pickupDeck, discardDeck, discardDeckIndex, this.countDownLatch);
+            Player player = new Player(i, pickupDeck, discardDeck, discardDeckIndex, countDownLatch);
             this.players.add(player);
         }
 
 
-
-        //Give players cards
+        //Give players cards in a round-robin fashion
         boolean givenCards = false;
         while (!givenCards) {
             for (Player player : this.players) {
@@ -68,7 +68,7 @@ public class CardGame {
             }
         }
 
-        //Give Cards to Deck
+        //Fill decks with remaining cards from the pack
         while (!this.pack.isEmpty()) {
             for (CardDeck deck : this.cardDecks) {
                 if (!this.pack.isEmpty()) {
@@ -77,7 +77,8 @@ public class CardGame {
             }
         }
 
-
+        //Start all player threads
+        //They use a latch to start simultaneously
         for (int i = 0; i < playerCount; i++) {
             this.players.get(i).start();
         }
@@ -93,26 +94,24 @@ public class CardGame {
         }
 
 
+        //Update main game flag so remaining threads stop gracefully
         isRunning.set(false);
-        for(Player player : this.players) {
-            if(player.isAlive()) {
-                player.interrupt();
-            }
-        }
-
-        try {
-            Thread.sleep(100);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
 
 
-        int counter = 0;
-        for(Player player : this.players) {
-            String str = player.getActions().get(player.getActions().size() - 3);
-            System.out.println(str);
-//            System.out.println(player.getActions().size());
-        }
+//        int counter = 0;
+//        for (Player player : this.players) {
+//            String str = player.getActions().get(player.getActions().size() - 1);
+////            System.out.println(player.getActions().size());
+//
+//            System.out.println(str);
+//        }
+//
+//        for (Player player : this.players) {
+//            String str = player.getActions().get(player.getActions().size() - 3);
+////            System.out.println(player.getActions().size());
+//
+//            System.out.println(str);
+//        }
 
 //        for(CardDeck cardDeck : this.cardDecks) {
 //            System.out.println(cardDeck.size());
@@ -124,28 +123,28 @@ public class CardGame {
 
     private void loadPackFromFile() {
         boolean isValid = false;
-        while(!isValid) {
+        while (!isValid) {
             System.out.println("Please enter location of pack to load:");
             String fileName = this.scan.nextLine();
             String path = "src/main/resources/packs/" + fileName;
 
 
-            if(!FileManager.doesFileExist(path)) {
+            if (!FileManager.doesFileExist(path)) {
                 System.out.println("Error: Pack File not Found");
                 continue;
             }
 
             List<String> fileData = FileManager.readFile(path);
 
-            if(fileData.size() % 8 != 0) {
+            if (fileData.size() % 8 != 0) {
                 System.out.println("Error: Invalid Pack");
                 continue;
             }
 
             try {
-                for(String line : fileData) {
+                for (String line : fileData) {
                     int number = Integer.parseInt(line);
-                    if(number <= 0) {
+                    if (number <= 0) {
                         throw new NumberFormatException();
                     }
 
@@ -162,7 +161,7 @@ public class CardGame {
     private int getPlayerCount() {
         int players = 0;
 
-        while(players <= 0) {
+        while (players <= 0) {
             try {
                 System.out.println("Please enter the number of players");
                 players = this.scan.nextInt();
@@ -174,7 +173,6 @@ public class CardGame {
 
         return players;
     }
-
 
 
     public void createPack(int numPlayers) {
