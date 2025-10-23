@@ -37,7 +37,7 @@ public class FileManager {
         //Writes a list of String data to a specified path
 
         try {
-            BufferedWriter writer = new BufferedWriter(new FileWriter("./output/" + path));
+            BufferedWriter writer = new BufferedWriter(new FileWriter("src/main/resources/output/" + path));
             for(String line : data) {
                 writer.write(line + "\n");
             }
@@ -45,6 +45,7 @@ public class FileManager {
         }
 
         catch (IOException e) {
+            e.printStackTrace();
             System.out.println("Error: Writing to File Failed");
         }
     }

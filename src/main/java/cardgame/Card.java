@@ -21,4 +21,9 @@ public class Card {
     public Integer getNumber() {
         return this.number;
     }
+
+    @Override
+    public String toString() {
+        return this.number.toString();
+    }
 }

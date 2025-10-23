@@ -97,6 +97,18 @@ public class CardGame {
         //Update main game flag so remaining threads stop gracefully
         isRunning.set(false);
 
+        //Save player action and deck state to files
+        for (Player player : this.players) {
+            FileManager.writeFile(String.format("player%d_output.txt", player.getOutputNumber()), player.getActions());
+        }
+
+        for (int i = 0; i < this.cardDecks.length; i++) {
+            CardDeck deck = this.cardDecks[i];
+            ArrayList<String> outputArray = new ArrayList<>();
+            outputArray.add(String.format("deck%d contents: %s", (i+1), deck.getOutputString()));
+            FileManager.writeFile(String.format("deck%d_output.txt", (i+1)), outputArray);
+        }
+
 
 //        int counter = 0;
 //        for (Player player : this.players) {

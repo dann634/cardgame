@@ -23,4 +23,12 @@ public class CardDeck {
     }
 
     public int size() {return this.safeQueue.size();}
+
+    public String getOutputString() {
+        StringBuilder output = new StringBuilder();
+        for (Card card : this.safeQueue) {
+            output.append(card.toString()).append(" ");
+        }
+        return output.toString();
+    }
 }
