@@ -17,13 +17,20 @@ public class CardGame {
     public static volatile AtomicBoolean isRunning = new AtomicBoolean(true);
     public static final AtomicInteger winningPlayer = new AtomicInteger(-1);
     private final List<Player> players;
-
     public static final CountDownLatch winningLatch = new CountDownLatch(1);
 
 
     public static void main(String[] args) {
         CardGame cardGame = new CardGame();
-        cardGame.startGame();
+
+        //Gets user input for number of players
+        int playerCount = cardGame.getPlayerCount();
+        cardGame.createPack(playerCount);
+
+        //Loads pack file
+        List<String> packData = cardGame.getPackFile();
+
+        cardGame.startGame(playerCount, packData);
     }
 
     public CardGame() {
@@ -32,14 +39,11 @@ public class CardGame {
         this.players = new ArrayList<>();
     }
 
-    public void startGame() {
+    public void startGame(int playerCount, List<String> packFile) {
         //Get Player Count from User and initialise dependent variables
-        int playerCount = this.getPlayerCount();
-        createPack(playerCount);
+        this.loadFileIntoPack(packFile);
         this.cardDecks = new CardDeck[playerCount];
         CountDownLatch countDownLatch = new CountDownLatch(playerCount);
-
-        loadPackFromFile();
 
         //Assign thread-safe deck's to array
         for (int i = 0; i < playerCount; ++i) {
@@ -133,7 +137,7 @@ public class CardGame {
     }
 
 
-    private void loadPackFromFile() {
+    private List<String> getPackFile() {
         boolean isValid = false;
         while (!isValid) {
             System.out.println("Please enter location of pack to load:");
@@ -143,32 +147,39 @@ public class CardGame {
 
             if (!FileManager.doesFileExist(path)) {
                 System.out.println("Error: Pack File not Found");
-                continue;
             }
 
             List<String> fileData = FileManager.readFile(path);
 
-            if (fileData.size() % 8 != 0) {
-                System.out.println("Error: Invalid Pack");
-                continue;
-            }
-
-            try {
-                for (String line : fileData) {
-                    int number = Integer.parseInt(line);
-                    if (number <= 0) {
-                        throw new NumberFormatException();
-                    }
-
-                    Card card = new Card(number);
-                    this.pack.add(card);
-                }
-                isValid = true;
-            } catch (NumberFormatException e) {
-                System.out.println("Error: Pack contains invalid values");
+            if(isPackValid(fileData)) {
+                return fileData;
             }
         }
+        return null;
     }
+
+    private boolean isPackValid(List<String> fileData) {
+        if (fileData.size() % 8 != 0) {
+            return false;
+        }
+
+        for (String line : fileData) {
+            int number = Integer.parseInt(line);
+            if (number <= 0) {
+                throw new NumberFormatException();
+            }
+        }
+        return true;
+    }
+
+    private void loadFileIntoPack(List<String> fileData) {
+        for(String line : fileData) {
+            int number = Integer.parseInt(line);
+            Card card = new Card(number);
+            this.pack.add(card);
+        }
+    }
+
 
     private int getPlayerCount() {
         int players = 0;
@@ -208,7 +219,6 @@ public class CardGame {
         Collections.shuffle(pack);
 
         String folderPath = "src/main/resources/packs/";
-        File folder = new File(folderPath);
         String fileName = "pack" + numPlayers + ".txt";
 
         try (FileWriter writer = new FileWriter(folderPath + fileName)) {
@@ -221,4 +231,11 @@ public class CardGame {
         }
     }
 
+    public CardDeck[] getCardDecks() {
+        return cardDecks;
+    }
+
+    public List<Player> getPlayers() {
+        return players;
+    }
 }

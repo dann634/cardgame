@@ -1,6 +1,10 @@
 package cardgame.io;
 
 import java.io.*;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -36,18 +40,23 @@ public class FileManager {
 
         //Writes a list of String data to a specified path
 
-        try {
-            BufferedWriter writer = new BufferedWriter(new FileWriter("src/main/resources/output/" + path));
-            for(String line : data) {
-                writer.write(line + "\n");
-            }
-            writer.close();
+        StringBuilder output = new StringBuilder();
+        for(String line : data) {
+            output.append(line).append("\n");
+        }
+
+        try (FileChannel channel = FileChannel.open(Paths.get("src/main/resources/output/" + path),
+                StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.APPEND)) {
+            ByteBuffer buffer = ByteBuffer.wrap(output.toString().getBytes());
+            channel.write(buffer);
+            channel.force(true);  // Ensures durability, forces direct write to file
         }
 
         catch (IOException e) {
-            e.printStackTrace();
-            System.out.println("Error: Writing to File Failed");
+            System.out.println("Error: Writing File Failed");
         }
+
+
     }
 
     public static boolean doesFileExist(String path) {

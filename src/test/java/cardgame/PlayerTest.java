@@ -3,25 +3,35 @@ package cardgame;
 import cardgame.exceptions.PlayerHasNoCardsException;
 import org.junit.jupiter.api.Test;
 
+import java.util.concurrent.CountDownLatch;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 public class PlayerTest {
+
+    private CountDownLatch latch;
+    private CardDeck[] decks;
+
+
     @Test
     public void testPlayerCreatedWithEmptyHand() {
-        Player player = new Player(0);
+        this.setupTest(1);
+        Player player = new Player(0, null, null, 0, latch);
         assertEquals(0, player.getNumberOfCards());
     }
 
     @Test
     public void testPlayerPickUpCardAddsCardToHand() {
-        Player player = new Player(0);
+        setupTest(1);
+        Player player = new Player(0, new CardDeck(), null, 1, latch);
         player.pickupCard(new Card(5));
         assertEquals(1, player.getNumberOfCards());
     }
 
     @Test
     public void testPlayerGetHandFormattedPreservesOrder() {
-        Player player = new Player(0);
+        setupTest(1);
+        Player player = new Player(0, new CardDeck(), null, 1, latch);
         player.pickupCard(new Card(2));
         player.pickupCard(new Card(5));
         player.pickupCard(new Card(9));
@@ -31,7 +41,7 @@ public class PlayerTest {
 
     @Test
     public void testPlayerDiscardCardRemovesNonPreferredCard() {
-        Player player = new Player(0);
+        Player player = new Player(0, new CardDeck(), new CardDeck(), 1, latch);
         player.pickupCard(new Card(1));
         player.pickupCard(new Card(2));
 
@@ -44,7 +54,8 @@ public class PlayerTest {
 
     @Test
     public void testPlayerDiscardCardRemovesDiscardedCard() {
-        Player player = new Player(0);
+        setupTest(1);
+        Player player = new Player(0, new CardDeck(), new CardDeck(), 1, latch);
         player.pickupCard(new Card(1));
         player.pickupCard(new Card(2));
         player.discardCard();
@@ -54,7 +65,8 @@ public class PlayerTest {
 
     @Test
     public void testPlayerDiscardCardRemovesRandomNonPreferredCard() {
-        Player player = new Player(0);
+        setupTest(1);
+        Player player = new Player(0, new CardDeck(), new CardDeck(), 1, latch);
         player.pickupCard(new Card(1));
         player.pickupCard(new Card(6));
         player.pickupCard(new Card(8));
@@ -69,16 +81,27 @@ public class PlayerTest {
 
     @Test
     public void testPlayerHasNoCardsDiscardCard() {
-        assertThrows(PlayerHasNoCardsException.class, () -> new Player(0).discardCard());
+        setupTest(1);
+        assertThrows(PlayerHasNoCardsException.class, () -> new Player(0, null, null, 1, latch).discardCard());
     }
 
     @Test
     public void testPlayerHasWonReturnsTrue() {
-        Player player = new Player(0);
+        setupTest(1);
+        Player player = new Player(0, new CardDeck(), new CardDeck(), 1, latch);
         for (int i = 0; i < 4; i++) {
             player.pickupCard(new Card(1));
         }
         assertTrue(player.hasWon());
     }
+
+    public void setupTest(int playerCount) {
+        this.latch = new CountDownLatch(playerCount);
+        this.decks = new CardDeck[playerCount];
+        for (int i = 0; i < playerCount; i++) {
+            this.decks[i] = new CardDeck();
+        }
+    }
+
 
 }
