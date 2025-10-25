@@ -14,10 +14,10 @@ public class CardGame {
     private final Scanner scan;
     private volatile CardDeck[] cardDecks;
     private final List<Card> pack;
-    public static volatile AtomicBoolean isRunning = new AtomicBoolean(true);
-    public static final AtomicInteger winningPlayer = new AtomicInteger(-1);
+    public static volatile AtomicBoolean isRunning;
+    public static AtomicInteger winningPlayer;
     private final List<Player> players;
-    public static final CountDownLatch winningLatch = new CountDownLatch(1);
+    public static CountDownLatch winningLatch;
 
 
     public static void main(String[] args) {
@@ -37,6 +37,10 @@ public class CardGame {
         this.scan = new Scanner(System.in);
         this.pack = new ArrayList<>();
         this.players = new ArrayList<>();
+
+        isRunning = new AtomicBoolean(true);
+        winningPlayer = new AtomicInteger(-1);
+        winningLatch = new CountDownLatch(1);
     }
 
     public void startGame(int playerCount, List<String> packFile) {
@@ -102,9 +106,9 @@ public class CardGame {
         isRunning.set(false);
 
         //Save player action and deck state to files
-        for (Player player : this.players) {
-            FileManager.writeFile(String.format("player%d_output.txt", player.getOutputNumber()), player.getActions());
-        }
+//        for (Player player : this.players) {
+//            FileManager.writeFile(String.format("player%d_output.txt", player.getOutputNumber()), player.getActions());
+//        }
 
         for (int i = 0; i < this.cardDecks.length; i++) {
             CardDeck deck = this.cardDecks[i];
@@ -117,8 +121,8 @@ public class CardGame {
 //        int counter = 0;
 //        for (Player player : this.players) {
 //            String str = player.getActions().get(player.getActions().size() - 1);
-////            System.out.println(player.getActions().size());
-//
+//            System.out.println(player.getActions().size());
+
 //            System.out.println(str);
 //        }
 //

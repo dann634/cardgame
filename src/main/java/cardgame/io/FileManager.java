@@ -46,7 +46,7 @@ public class FileManager {
         }
 
         try (FileChannel channel = FileChannel.open(Paths.get("src/main/resources/output/" + path),
-                StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.APPEND)) {
+                StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING)) {
             ByteBuffer buffer = ByteBuffer.wrap(output.toString().getBytes());
             channel.write(buffer);
             channel.force(true);  // Ensures durability, forces direct write to file
