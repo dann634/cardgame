@@ -221,7 +221,7 @@ public class Player extends Thread {
         private final FileChannel channel;
 
         public Logger(int playerNumber) throws IOException {
-            Path path = Paths.get("src/main/resources/output/player" + playerNumber + ".txt");
+            Path path = Paths.get("src/main/resources/output/player" + playerNumber + "_output.txt");
             this.channel = FileChannel.open(path, StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING);
         }
 

@@ -204,7 +204,7 @@ public class CardGame {
 
         List<Integer> pack = new ArrayList<>();
 
-        //Add Each Card that players can use
+        //Generates all the cards
         for (int num = 1; num <= (numPlayers * 2); num++) {
             for (int i = 0; i < 4; i++) {
                 pack.add(num);
@@ -213,6 +213,7 @@ public class CardGame {
 
         Collections.shuffle(pack);
 
+        //Saves the pack to a file
         String folderPath = "src/main/resources/packs/";
         String fileName = "pack" + numPlayers + ".txt";
 

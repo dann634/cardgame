@@ -31,6 +31,7 @@ class CardGameTest {
     }
 
 
+    //Tests that all the players finish the game holding 4 cards (tests atomicity)
     @Test
     public void testPlayersHaveFourCardsAtEnd() {
         List<Player> players = this.cardGame.getPlayers();
@@ -41,6 +42,7 @@ class CardGameTest {
         }
     }
 
+    //Tests that all players receive a message from the other players when someone wins
     @Test
     public void testAllPlayersReceiveWinMessage() {
         List<Player> players = this.cardGame.getPlayers();
@@ -55,6 +57,7 @@ class CardGameTest {
         }
     }
 
+    //Tests that the player who wins has the 'Player x wins!' in their action log
     @Test
     public void testWinnerPrintsWinningMessage() {
         List<Player> players = this.cardGame.getPlayers();
@@ -64,6 +67,7 @@ class CardGameTest {
         assertEquals("player " + winningNumber + " wins", playerActions.get(playerActions.size() - 3));
     }
 
+    //Tests that all the output files for the decks are generated
     @Test
     public void testDeckOutputFilesAreGenerated() {
         int deckCount = this.cardGame.getCardDecks().length;
@@ -76,6 +80,7 @@ class CardGameTest {
         }
     }
 
+    //Tests that all the output files for the players actions are generated properly
     @Test
     public void testPlayerOutputFilesAreGenerated() {
         int playerCount = this.cardGame.getPlayers().size();
@@ -88,12 +93,15 @@ class CardGameTest {
         }
     }
 
+    //Tests that the pack file loads a valid test Pack
     @Test
     public void testPackFileLoadsCorrectly() {
-        List<String> testFileData = new ArrayList<>(List.of("1", "1", "1", "1", "2", "2", "2", "2"));
+        List<String> testFileData = new ArrayList<>(List.of("1", "1", "1", "1", "2", "2", "2", "2"
+        ,"3","3","3","3","4","4","4","4"));
         this.cardGame.isPackValid(testFileData);
     }
 
+    //Tests that an invalid pack file is rejected
     @Test
     public void testInvalidPackFile() {
         List<String> testFileData = new ArrayList<>(List.of("1", "1", "1", "2", "2", "2"));
