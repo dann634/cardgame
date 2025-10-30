@@ -105,10 +105,6 @@ public class CardGame {
         //Update main game flag so remaining threads stop gracefully
         isRunning.set(false);
 
-        //Save player action and deck state to files
-//        for (Player player : this.players) {
-//            FileManager.writeFile(String.format("player%d_output.txt", player.getOutputNumber()), player.getActions());
-//        }
 
         for (int i = 0; i < this.cardDecks.length; i++) {
             CardDeck deck = this.cardDecks[i];
@@ -116,28 +112,6 @@ public class CardGame {
             outputArray.add(String.format("deck%d contents: %s", (i+1), deck.getOutputString()));
             FileManager.writeFile(String.format("deck%d_output.txt", (i+1)), outputArray);
         }
-
-
-//        int counter = 0;
-//        for (Player player : this.players) {
-//            String str = player.getActions().get(player.getActions().size() - 1);
-//            System.out.println(player.getActions().size());
-
-//            System.out.println(str);
-//        }
-//
-//        for (Player player : this.players) {
-//            String str = player.getActions().get(player.getActions().size() - 3);
-////            System.out.println(player.getActions().size());
-//
-//            System.out.println(str);
-//        }
-
-//        for(CardDeck cardDeck : this.cardDecks) {
-//            System.out.println(cardDeck.size());
-//        }
-
-
     }
 
 
@@ -145,6 +119,7 @@ public class CardGame {
         boolean isValid = false;
         while (!isValid) {
             System.out.println("Please enter location of pack to load:");
+            this.scan.nextLine(); //Clears buffer from previous inputs
             String fileName = this.scan.nextLine();
             String path = "src/main/resources/packs/" + fileName;
 
@@ -162,7 +137,7 @@ public class CardGame {
         return null;
     }
 
-    private boolean isPackValid(List<String> fileData) {
+    public boolean isPackValid(List<String> fileData) {
         if (fileData.size() % 8 != 0) {
             return false;
         }
@@ -186,14 +161,32 @@ public class CardGame {
 
 
     private int getPlayerCount() {
+
+        /*
+        Takes user input from the console for the number of players
+        Requirements:
+        - Must be a number
+        - Must be greater than 0
+         */
+
         int players = 0;
 
         while (players <= 0) {
             try {
                 System.out.println("Please enter the number of players");
                 players = this.scan.nextInt();
+
+                if(players <= 0) {
+                    System.out.println("Error: Please enter a number greater than 0");
+                }
+            }
+
+            catch (InputMismatchException e) { //If a non-numerical character is inputted
+                System.out.println("Error: Please enter a non-negative integer");
                 this.scan.nextLine();
-            } catch (RuntimeException e) {
+            }
+
+            catch (RuntimeException e) { //Catches every other possible run-time error
                 System.out.println("Error: Please enter a non-negative integer");
             }
         }

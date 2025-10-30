@@ -18,10 +18,6 @@ public class CardDeck {
         this.safeQueue.offer(card);
     }
 
-    public boolean isEmpty() {
-        return this.safeQueue.isEmpty();
-    }
-
     public int size() {return this.safeQueue.size();}
 
     public String getOutputString() {

@@ -31,12 +31,14 @@ public class Player extends Thread {
     public Player(int number, CardDeck pickupDeck, CardDeck discardDeck, int discardIndex, CountDownLatch countDownLatch) {
         this.number = number;
         this.cards = new ArrayList<>();
-        this.actions = new ArrayList<>();//Collections.synchronizedList(new ArrayList<>());
+        this.actions = new ArrayList<>();
         this.pickupDeck = pickupDeck;
         this.discardDeck = discardDeck;
         this.pickupIndex = number;
         this.discardIndex = discardIndex;
         this.countDownLatch = countDownLatch;
+        this.setName("Player " + number);
+
         try {
             this.logger = new Logger(number + 1);
         } catch (IOException e) {
@@ -133,10 +135,6 @@ public class Player extends Thread {
             //Save the last actions to action list
             int winningPlayer = CardGame.winningPlayer.get();
 
-//            while(winningPlayer == -1) {
-//                winningPlayer = CardGame.winningPlayer.get();
-//            }
-
             this.actions.add("player " + winningPlayer + " has informed player " + getOutputNumber() + " that player " + winningPlayer + " has won");
             this.actions.add("player " + (this.number + 1) + " exits");
             this.actions.add("player %d hand: %s".formatted(this.number + 1, this.getHandFormatted()));
@@ -147,7 +145,7 @@ public class Player extends Thread {
         }
 
         catch (Exception e) {
-            e.printStackTrace();
+            System.out.println("Thread [" + this.getName() + "] was stopped");
         }
     }
 
@@ -212,10 +210,7 @@ public class Player extends Thread {
     public int getNumberOfCards() {
         return this.cards.size();
     }
-
-    public int getNumber() {
-        return number;
-    }
+    
 
     public List<String> getActions() {
         return actions;
