@@ -140,10 +140,11 @@ public class CardGame {
     }
 
     public boolean isPackValid(List<String> fileData) {
-        if (fileData.size() % 8 != 0) {
+        if (fileData.size() % 8 != 0) { //Filesize must be a multiple of 8
             return false;
         }
 
+        //Each line must contain a valid number
         for (String line : fileData) {
             int number = Integer.parseInt(line);
             if (number <= 0) {
@@ -154,6 +155,7 @@ public class CardGame {
     }
 
     private void loadFileIntoPack(List<String> fileData) {
+        //Convert each String number from file to integer in pack
         for(String line : fileData) {
             int number = Integer.parseInt(line);
             Card card = new Card(number);
@@ -202,17 +204,11 @@ public class CardGame {
 
         List<Integer> pack = new ArrayList<>();
 
-        for (int num = 1; num < numPlayers + 1; num++) {
+        //Add Each Card that players can use
+        for (int num = 1; num <= (numPlayers * 2); num++) {
             for (int i = 0; i < 4; i++) {
                 pack.add(num);
             }
-        }
-
-        Random rand = new Random();
-        int remaining = totalCards - pack.size();
-        for (int i = 0; i < remaining; i++) {
-            int randomNum = rand.nextInt(numPlayers) + (numPlayers + 1);
-            pack.add(randomNum);
         }
 
         Collections.shuffle(pack);
