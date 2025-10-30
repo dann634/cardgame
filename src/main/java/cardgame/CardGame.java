@@ -21,6 +21,7 @@ public class CardGame {
 
 
     public static void main(String[] args) {
+
         CardGame cardGame = new CardGame();
 
         //Gets user input for number of players
@@ -116,16 +117,18 @@ public class CardGame {
 
 
     private List<String> getPackFile() {
-        boolean isValid = false;
-        while (!isValid) {
+
+        this.scan.nextLine(); //Clears buffer from previous inputs
+
+        while (true) {
             System.out.println("Please enter location of pack to load:");
-            this.scan.nextLine(); //Clears buffer from previous inputs
             String fileName = this.scan.nextLine();
             String path = "src/main/resources/packs/" + fileName;
 
 
             if (!FileManager.doesFileExist(path)) {
                 System.out.println("Error: Pack File not Found");
+                continue;
             }
 
             List<String> fileData = FileManager.readFile(path);
@@ -134,7 +137,6 @@ public class CardGame {
                 return fileData;
             }
         }
-        return null;
     }
 
     public boolean isPackValid(List<String> fileData) {

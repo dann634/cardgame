@@ -41,10 +41,6 @@ _curl https://repo1.maven.org/maven2/org/junit/platform/junit-platform-console-s
 _curl https://repo1.maven.org/maven2/org/junit/platform/junit-platform-console-standalone/1.8.2/junit-platform-console-standalone-1.8.2.jar --output junit-platform-console-standalone-1.8.2.jar_
 
 
-#### Compile Test Classes (If not done already)
-
-_javac -cp "junit-platform-console-standalone-1.8.2.jar" CardGameTest.java CardTest.java PlayerTest.java_
-
 #### Execute Test Files
 
-_java -jar junit-platform-console-standalone-1.8.2.jar --class-path ".;cards.jar" --select-class CardGameTest --select-class CardTest --select-class PlayerTest_
+_java -jar junit-platform-console-standalone-1.8.2.jar --class-path cardgame.jar --class-path target/test-classes/cardgame --select-package cardgame_
